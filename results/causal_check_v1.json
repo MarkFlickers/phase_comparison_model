@@ -1,0 +1,21 @@
+{
+ "causality_test": {
+  "adapt_now_P": {
+   "t_first": 0.32000000245729265,
+   "change_first_deg": 8.642095133641753
+  },
+  "adaptc_now_P": {
+   "t_first": 0.3199999971058887,
+   "change_first_deg": 0.0
+  },
+  "adapt_mid_P": {
+   "t_first": 0.3,
+   "change_first_deg": 0.0028461037811751307
+  },
+  "adaptc_mid_P": {
+   "t_first": 0.3,
+   "change_first_deg": 0.0
+  }
+ },
+ "n_trials": 400
+}

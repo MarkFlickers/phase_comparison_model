@@ -1,0 +1,31 @@
+{
+ "causality_test": {
+  "replace_after_0.35s": {
+   "adapt_now_P": {
+    "t_first": 0.32000000245729265,
+    "change_first_deg": 8.642095133641677
+   },
+   "adaptc_now_P": {
+    "t_first": 0.31999358087419794,
+    "change_first_deg": 0.0
+   },
+   "adapt_mid_P": {
+    "t_first": 0.3,
+    "change_first_deg": 0.0028461037810987976
+   },
+   "adaptc_mid_P": {
+    "t_first": 0.3,
+    "change_first_deg": 0.0
+   }
+  },
+  "boundary": {
+   "n_cases": 96,
+   "max_abs_change_deg": 0.0,
+   "max_abs_tout_change_s": 0.0,
+   "latency_min_s": 0.019898620410555012,
+   "latency_max_s": 0.020423451297150175,
+   "extra_vs_f1_window_max_s": 0.0008156081598952314
+  }
+ },
+ "n_trials": 400
+}
