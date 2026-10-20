@@ -27,6 +27,20 @@ INK2 = '#4d4d4d'
 INK3 = '#808080'
 GRID = '#d9d9d9'
 
+# цвета графиков (проверены на различимость при нарушениях цветового зрения);
+# цвет закреплён за смыслом во всех рисунках: ДПФ — синий, переход через ноль — оранжевый,
+# МНК — зелёный; погрешность на рис. 2 — оранжевый. Подписи — чёрным, не цветом серии.
+BLUE = '#2a78d6'
+ORANGE = '#eb6834'
+GREEN = '#1baf7a'
+RED = '#d6362f'           # рис. 7: разные сигналы
+RED_LIGHT = '#f4a09b'     # рис. 7: перед включением
+ORANGE_DARK = '#a8360a'   # переход через ноль без ФНЧ (рядом с вариантом после ФНЧ — оранжевым)
+AMBER = '#c98500'     # ДПФ по прямой последовательности (фиолетовый сливается со светло-синим)
+BLUE_FILL = '#e3eefc'
+BLUE_DARK = '#184f95'     # варианты ДПФ на одном графике: 10 периодов — тёмный,
+BLUE_LIGHT = '#3987e5'    # 1 период — светлый
+
 STYLES = [   # (цвет, линия, маркер) — различимы в оттенках серого
     dict(color=INK, linestyle='-', marker='o'),
     dict(color=INK2, linestyle='--', marker='s'),
@@ -84,6 +98,13 @@ def save(fig, name):
         pass
 
 
+def level_line(ax, y, x_label, text):
+    """Горизонтальная линия уровня с подписью в разрыве (белая подложка под текстом)."""
+    ax.axhline(y, color=INK3, lw=0.6, zorder=1)
+    ax.text(x_label, y, text, ha='center', va='center', fontsize=C.FONT_SIZE - 2, color=INK2, zorder=2,
+            bbox=dict(facecolor='white', edgecolor='none', pad=1.5))
+
+
 def read(path):
     with open(os.path.join(RES, path), encoding='utf-8') as fh:
         return list(csv.DictReader(fh))
@@ -125,42 +146,37 @@ def fig_structure():
 
     mods = ((6.0, 'Основной\nисточник\n(сеть)', 1), (1.7, 'Резервный\nисточник\n(ДГУ)', 2))
     for ym, src, k in mods:
-        # электрический домен модуля
-        ax.add_patch(Rectangle((2.95, ym - 0.45), 4.55, 3.1, fill=False, linestyle=(0, (4, 3)),
-                               linewidth=0.7, edgecolor=INK2))
-        if k == 1:
-            ax.text(3.12, ym + 2.5, 'Электрический домен 1', fontsize=fs - 0.5, color=INK2, va='center')
-        else:
-            ax.text(3.12, ym - 0.22, 'Электрический домен 2', fontsize=fs - 0.5, color=INK2, va='center')
         box(0.2, ym + 0.35, 1.75, 1.5, src)
         arrow([(1.95, ym + 1.1), (3.2, ym + 1.1)])
         ax.text(2.57, ym + 1.22, 'u$_A$, u$_B$, u$_C$', fontsize=fs - 0.5, ha='center', va='bottom', color=INK)
         box(3.2, ym, 4.0, 2.2, '')
-        ax.text(5.2, ym + 1.65, f'Измерительный модуль {k}', ha='center', va='center', fontsize=fs,
+        ax.text(5.2, ym + 1.45, f'Измерительный модуль {k}', ha='center', va='center', fontsize=fs,
                 fontweight='bold', color=INK)
-        ax.text(5.2, ym + 0.8, 'АЦП, цифровые фильтры,\nвыдача кадров отсчётов', ha='center',
-                va='center', fontsize=fs, color=INK, linespacing=1.35)
+        ax.text(5.2, ym + 0.75, 'АЦП, цифровые фильтры', ha='center',
+                va='center', fontsize=fs, color=INK)
     # гальванический барьер
     for x in (7.8, 8.05):
         ax.add_patch(Rectangle((x, 0.5), 0.13, 8.75, facecolor='#bfbfbf', edgecolor='none'))
     ax.text(7.99, 9.45, 'Гальванический барьер', ha='center', va='center', fontsize=fs, color=INK)
-    # центральный контроллер
-    box(8.6, 0.8, 5.0, 8.2, '', lw=1.3)
-    ax.text(11.1, 8.6, 'Центральный контроллер', ha='center', va='center', fontsize=fs + 0.5,
-            fontweight='bold', color=INK)
-    box(8.9, 4.2, 1.7, 1.4, 'Генератор\nобщего\nтакта')
-    box(10.9, 1.1, 2.45, 7.0, 'Приём кадров\n\nАппаратный\nтаймер:\nметки начала\nкадров\n\n'
-        'Оценка фаз\nи частот\n\nПриведение\nк общему\nмоменту,\nпоправка\nкалибровки\n\nСравнение')
+    # генератор общего такта и центральный контроллер — одна рамка у каждого
+    box(8.6, 4.2, 1.7, 1.4, 'Генератор\nобщего\nтакта')
+    box(10.6, 1.1, 2.8, 7.5, '', lw=1.3)
+    ax.text(12.0, 7.85, 'Центральный\nконтроллер', ha='center', va='center', fontsize=fs + 0.5,
+            fontweight='bold', color=INK, linespacing=1.3)
+    for y, text in ((5.9, 'Метки кадров:\nприведение\nк общей\nвременной\nсетке'),
+                    (3.75, 'Оценка фаз\nи частот'),
+                    (2.0, 'Сравнение')):
+        ax.text(12.0, y, text, ha='center', va='center', fontsize=fs, color=INK, linespacing=1.35)
     # общий такт к модулям (пунктир)
-    arrow([(8.9, 5.2), (5.2, 5.2), (5.2, 6.0)], dashed=True)
-    arrow([(8.9, 4.6), (5.2, 4.6), (5.2, 3.9)], dashed=True)
+    arrow([(8.6, 5.2), (5.2, 5.2), (5.2, 6.0)], dashed=True)
+    arrow([(8.6, 4.6), (5.2, 4.6), (5.2, 3.9)], dashed=True)
     ax.text(6.45, 4.9, 'общий такт', fontsize=fs - 0.5, ha='center', va='center', color=INK)
     # кадры отсчётов к контроллеру
     for y in (6.8, 2.5):
-        arrow([(7.2, y), (10.9, y)])
-        ax.text(9.75, y + 0.12, 'кадры отсчётов', fontsize=fs - 0.5, ha='center', va='bottom', color=INK)
+        arrow([(7.2, y), (10.6, y)])
+        ax.text(9.4, y + 0.12, 'кадры отсчётов', fontsize=fs - 0.5, ha='center', va='bottom', color=INK)
     # выход
-    arrow([(13.35, 4.6), (14.0, 4.6)])
+    arrow([(13.4, 4.6), (14.0, 4.6)])
     box(14.0, 3.6, 1.85, 2.0, 'Δφ, Δf, ΔU\n→ АВР,\nсинхрони-\nзатор')
     save(fig, 'ris1_struktura')
 
@@ -179,30 +195,31 @@ def fig_time_attribution():
     slope = 360.0 * df / 1000.0       # °/мс
     phi0 = 28.0
     t = np.linspace(0, 50, 400)
+    ax.grid(False)                    # поясняющая схема: точные значения по осям не важны
     ax.plot(t, phi0 - slope * t, color=INK, lw=1.4)
-    ax.annotate('истинная разность фаз Δφ(t)\nпри Δf = f₂ − f₁ = 1 Гц', xy=(6.0, phi0 - slope * 6.0),
-                xytext=(1.0, 20.0), fontsize=C.FONT_SIZE - 1, ha='left', va='top',
-                arrowprops=dict(arrowstyle='-', lw=0.6, color=INK2, shrinkA=2, shrinkB=2))
+    ax.text(4.0, phi0 - slope * 4.0 + 0.35, 'истинная разность фаз Δφ(t)', fontsize=C.FONT_SIZE - 1,
+            rotation=np.degrees(np.arctan(-slope)), rotation_mode='anchor', transform_rotates_text=True,
+            ha='left', va='bottom', color=INK)
     te, Tw, dbar = 38.0, 20.0, 4.0    # момент выдачи, длина окна, общая задержка, мс
-    ax.axvspan(te - Tw - dbar, te - dbar, color='#e6e6e6', zorder=0)
+    ax.axvspan(te - Tw - dbar, te - dbar, color=BLUE_FILL, zorder=0, lw=0)
     ax.text(te - Tw - dbar + 0.4, 27.6, 'отсчёты окна\nв аналоговом времени', ha='left', va='top',
             fontsize=C.FONT_SIZE - 2, color=INK2)
     tc = te - Tw / 2 - dbar
     yc = phi0 - slope * tc
     ye = phi0 - slope * te
-    ax.plot([tc, te], [yc, yc], color=INK, lw=1.1, linestyle='--')
+    ax.plot([tc, te], [yc, yc], color=BLUE, lw=1.3, linestyle='--')
     ax.text((tc + te) / 2 + 1.0, yc + 0.15, 'оценка по окну Δφ̂', ha='center', va='bottom', fontsize=C.FONT_SIZE - 1)
-    ax.plot([tc], [yc], marker='o', color=INK, ms=5, linestyle='none')
-    ax.plot([te], [ye], marker='s', color=INK, ms=5, linestyle='none')
+    ax.plot([tc], [yc], marker='o', color=BLUE, ms=6, linestyle='none', zorder=3)
+    ax.plot([te], [ye], marker='s', color=INK, ms=5, linestyle='none', zorder=3)
     ax.text(tc - 0.4, yc - 0.45, 'середина\nокна', ha='right', va='top', fontsize=C.FONT_SIZE - 2, color=INK2)
     ax.axvline(te, color=INK3, lw=0.8)
     ax.text(te + 0.4, 27.6, 'момент выдачи', ha='left', va='top', fontsize=C.FONT_SIZE - 2, color=INK2)
     ax.annotate('', xy=(te + 0.7, ye), xytext=(te + 0.7, yc),
-                arrowprops=dict(arrowstyle='<->', lw=0.9, color=INK, shrinkA=0, shrinkB=0))
+                arrowprops=dict(arrowstyle='<->', lw=1.3, color=ORANGE, shrinkA=0, shrinkB=0))
     ax.text(te + 1.2, (yc + ye) / 2 + 0.8, 'ε = 360°·Δf·τ', va='center', fontsize=C.FONT_SIZE - 1)
     ax.annotate('', xy=(tc, 13.2), xytext=(te, 13.2),
                 arrowprops=dict(arrowstyle='<->', lw=0.9, color=INK, shrinkA=0, shrinkB=0))
-    ax.text((tc + te) / 2 - 2.0, 13.45, 'τ = T$_{ок}$/2 + d̄', ha='center', va='bottom', fontsize=C.FONT_SIZE - 1)
+    ax.text((tc + te) / 2 - 2.0, 13.45, r'τ = T$_{ок}$/2 + $\bar{\mathrm{d}}$', ha='center', va='bottom', fontsize=C.FONT_SIZE - 1)
     # окно по меткам прибора и сдвиг на общую задержку
     ax.annotate('', xy=(te - Tw, 10.6), xytext=(te, 10.6),
                 arrowprops=dict(arrowstyle='|-|', lw=0.8, color=INK, shrinkA=0, shrinkB=0, mutation_scale=3))
@@ -210,7 +227,7 @@ def fig_time_attribution():
             fontsize=C.FONT_SIZE - 2, color=INK)
     ax.annotate('', xy=(te - dbar, 12.0), xytext=(te, 12.0),
                 arrowprops=dict(arrowstyle='-|>', lw=0.8, color=INK, shrinkA=0, shrinkB=0, mutation_scale=7))
-    ax.text(te - dbar / 2, 12.1, 'd̄', ha='center', va='bottom', fontsize=C.FONT_SIZE - 1)
+    ax.text(te - dbar / 2, 12.1, r'$\bar{\mathrm{d}}$', ha='center', va='bottom', fontsize=C.FONT_SIZE - 1)
     ax.set_xlim(0, 50)
     ax.set_ylim(10, 28)
     ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
@@ -243,21 +260,23 @@ def fig_c2_time():
         ('dft1_end_A', 'ДПФ, 1 период, результат как текущий (τ ≈ 10 мс)', (C.FS / C.F0 - 1) / (2 * C.FS)),
         ('zc_lpf', 'Переход через ноль после ФНЧ (τ ≈ 4,5 мс)', None),
     ]
+    # расчёт — одинаковые серые линии под маркерами, чтобы не читаться как аппроксимация точек
+    for k, (est, lab, tau) in enumerate(series):
+        if tau is not None:
+            yf = 360.0 * xs * tau
+        else:
+            yf = np.degrees(zl.filter_phase([C.F0]))[0] - np.degrees(zl.filter_phase(C.F0 + xs))
+        ax.plot(xs, yf, color=INK3, lw=0.9, zorder=1,
+                label='расчёт по формулам (4) и (6)' if k == 0 else None)
     for k, (est, lab, tau) in enumerate(series):
         x, y = c2_curve(rows, est)
-        st = STYLES[k]
-        ax.plot(x, y, linestyle='none', marker=st['marker'], color=st['color'], label=lab,
+        st = dict(STYLES[k], color=(BLUE_DARK, BLUE_LIGHT, ORANGE)[k])
+        ax.plot(x, y, linestyle='none', marker=st['marker'], color=st['color'], label=lab, zorder=3,
                 markerfacecolor='white' if k == 1 else st['color'], markeredgewidth=1.0)
-        if tau is not None:
-            ax.plot(xs, 360.0 * xs * tau, color=st['color'], lw=0.9, linestyle=st['linestyle'])
-        else:
-            ph = np.degrees(zl.filter_phase(C.F0 + xs))
-            ax.plot(xs, np.degrees(zl.filter_phase([C.F0]))[0] - ph, color=st['color'], lw=0.9,
-                    linestyle=st['linestyle'])
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlim(0.018, 2.2)
-    ax.set_ylim(0.005, 120)
+    ax.set_ylim(0.01, 120)
     ax.xaxis.set_major_locator(ticker.FixedLocator([0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0]))
     ax.xaxis.set_major_formatter(log_formatter())
     ax.yaxis.set_major_formatter(log_formatter())
@@ -265,9 +284,8 @@ def fig_c2_time():
     ax.set_xlabel('Разность частот источников Δf = f₂ − f₁, Гц (f₁ = 50 Гц)')
     ax.set_ylabel('Наибольшая погрешность |ε|, °')
     ax.grid(True, which='major')
-    ax.legend(loc='upper left')
-    ax.text(0.98, 0.04, 'точки — моделирование; линии — 360°·Δf·τ\n(для ФНЧ — по фазовой характеристике)',
-            transform=ax.transAxes, ha='right', va='bottom', fontsize=C.FONT_SIZE - 2, color=INK2)
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h[1:] + h[:1], l[1:] + l[:1], loc='upper left')    # данные, затем расчёт
     fig.tight_layout()
     save(fig, 'ris3_C2_otnesenie')
 
@@ -276,30 +294,25 @@ def fig_c2_time():
 def fig_c2_leakage():
     rows = read('c2_summary.csv')
     fig, ax = plt.subplots(figsize=figsize())
-    series = [
-        ('dft1_mid_A', 'ДПФ, 1 период, фаза A'),
-        ('dft10_mid_A', 'ДПФ, 10 периодов, фаза A'),
-        ('dft1_mid_P', 'ДПФ, 1 период, прямая последовательность'),
-        ('adapt_mid_P', 'МНК с подстройкой частоты, прямая последовательность'),
-    ]
-    for k, (est, lab) in enumerate(series):
-        x, y = c2_curve(rows, est)
-        st = STYLES[k]
-        ax.plot(x, y, label=lab, markerfacecolor='white' if k in (1, 3) else st['color'],
-                markeredgewidth=1.0, **st)
+    # данные — только маркеры; формула (8) — серая линия под ними (как на рис. 3)
     xs = np.linspace(0.02, 2.0, 200)
-    ax.plot(xs, np.degrees(np.arcsin(xs / (2 * C.F0 + xs))), color=INK3, lw=0.8, linestyle='-')
-    # прямые подписи кривых
-    fs = C.FONT_SIZE - 1
-    ax.text(0.62, 1.25, 'ДПФ, фаза A: окно 1 период (●) и 10 периодов (□);\n'
-            'тонкая линия — arcsin[Δf/(2f₀ + Δf)]', ha='left', va='bottom', fontsize=fs - 1, color=INK)
-    ax.text(0.62, 0.042, 'ДПФ, 1 период, прямая последовательность', ha='left', va='bottom',
-            fontsize=fs - 1, color=INK)
-    ax.text(0.62, 0.0042, 'МНК с подстройкой частоты, прямая последовательность', ha='left', va='top',
-            fontsize=fs - 1, color=INK)
+    ax.plot(xs, np.degrees(np.arcsin(xs / (2 * C.F0 + xs))), color=INK3, lw=0.9, zorder=1,
+            label='расчёт по формуле (8)')
+    series = [   # (оцениватель, подпись, цвет, маркер, размер, заливка)
+        ('dft10_mid_A', 'ДПФ, 10 периодов, фаза A', BLUE_DARK, 'o', 5.5, True),
+        ('dft1_mid_A', 'ДПФ, 1 период, фаза A', BLUE_LIGHT, 's', 7.0, False),
+        ('dft1_mid_P', 'ДПФ, 1 период, прямая последовательность', AMBER, '^', 6.0, True),
+        ('adapt_mid_P', 'МНК, прямая последовательность', GREEN, 'D', 5.0, True),
+    ]
+    for est, lab, col, mk, ms, filled in series:
+        x, y = c2_curve(rows, est)
+        ax.plot(x, y, linestyle='none', marker=mk, ms=ms, color=col, label=lab, zorder=3,
+                markerfacecolor=col if filled else 'none', markeredgewidth=1.0)
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h[1:3] + h[:1] + h[3:], l[1:3] + l[:1] + l[3:], loc='upper left')
     ax.set_yscale('log')
     ax.set_xlim(0, 2.05)
-    ax.set_ylim(1e-3, 5)
+    ax.set_ylim(1e-3, 20)              # место для легенды над данными
     ax.xaxis.set_major_locator(ticker.MultipleLocator(0.2))
     ax.xaxis.set_major_formatter(lin_formatter(1))
     ax.yaxis.set_major_formatter(log_formatter())
@@ -321,28 +334,28 @@ def fig_c3():
     (c3_zc_10000.csv), остальные оцениватели — 2000 испытаний основной серии (c3_trials.csv)."""
     rows = read('c3_trials.csv')
     fig, ax = plt.subplots(figsize=figsize())
-    series = [
-        ('zc', 'Переход\nчерез ноль', (3.0, 80), 'right'),
-        ('zc_lpf', 'Переход через\nноль после ФНЧ', (0.085, 33), 'left'),
-        ('dft1_mid_A', 'ДПФ, 1 период,\nфаза A', (0.0085, 66), 'left'),
-        ('adapt_mid_A', 'МНК с подстройкой\nчастоты, фаза A', (0.0026, 62), 'right'),
+    series = [   # (оцениватель, подпись, место подписи, выравнивание, цвет)
+        ('zc', 'Переход\nчерез ноль', (3.0, 80), 'right', ORANGE_DARK),
+        ('zc_lpf', 'Переход через\nноль после ФНЧ', (0.085, 33), 'left', ORANGE),
+        ('dft1_mid_A', 'ДПФ, 1 период,\nфаза A', (0.0085, 66), 'left', BLUE_LIGHT),
+        ('adapt_mid_A', 'МНК,\nфаза A', (0.0027, 62), 'right', GREEN),
     ]
     zc10k = read('c3_zc_10000.csv')      # уточнение для переходов через ноль: 10 000 испытаний
-    for k, (est, lab, (lx, ly), ha) in enumerate(series):
+    for k, (est, lab, (lx, ly), ha, col) in enumerate(series):
         if est in ('zc', 'zc_lpf'):
             vals = [float(r[est + '_max_abs']) for r in zc10k]
         else:
             vals = [float(r['max_abs']) for r in rows if r['est'] == est and r['mode'] == 'working']
         x, p = ecdf(vals)
-        st = STYLES[k]
+        st = dict(STYLES[k], color=col)
         ax.plot(x, p, color=st['color'], linestyle=st['linestyle'], lw=1.4)
         i95 = int(np.searchsorted(p, 95.0))
         ax.plot([x[i95]], [95.0], marker=st['marker'], color=st['color'],
                 markerfacecolor='white' if k in (1, 3) else st['color'], markeredgewidth=1.0, ms=6)
         ax.text(lx, ly, lab, ha=ha, va='center', fontsize=C.FONT_SIZE - 1, color=INK, linespacing=1.2)
-    ax.axhline(95.0, color=INK3, lw=0.6)
+    level_line(ax, 95.0, 0.045, '95 %')     # разрыв — между кривыми ДПФ и перехода после ФНЧ
     ax.set_xscale('log')
-    ax.set_xlim(1e-4, 20)
+    ax.set_xlim(1e-3, 20)
     ax.set_ylim(0, 101)
     ax.xaxis.set_major_formatter(log_formatter())
     ax.yaxis.set_major_formatter(lin_formatter(0))
@@ -357,28 +370,28 @@ def fig_c4():
     rows = read('c4_unbalance_quantiles.csv')
     q = np.array([float(r['quantile']) for r in rows]) * 100.0
     fig, ax = plt.subplots(figsize=figsize())
+    # не алгоритмы, а определения угла: цвета, не занятые алгоритмами на других рисунках
     series = [
-        ('phaseA_95', 'Фазные напряжения A'),
-        ('worst_phase_95', 'Фазные напряжения, наибольшее по фазам A, B, C'),
-        ('line_AB_95', 'Линейные напряжения AB'),
+        ('phaseA_95', 'Фазные напряжения A', '#4a3aa7'),
+        ('worst_phase_95', 'Фазные напряжения, наибольшее по фазам A, B, C', '#8f84e8'),
+        ('line_AB_95', 'Линейные напряжения AB', '#d55181'),
     ]
-    for k, (col, lab) in enumerate(series):
+    for k, (col, lab, color) in enumerate(series):
         x = np.array([float(r[col]) for r in rows])
-        st = STYLES[k]
+        st = dict(STYLES[k], color=color)
         ax.plot(x, q, color=st['color'], linestyle=st['linestyle'], lw=1.4, label=lab)
         i95 = int(np.searchsorted(q, 95.0))
-        ax.plot([x[i95]], [95.0], marker=st['marker'], color=st['color'],
+        ax.plot([x[i95]], [95.0], marker=st['marker'], color=st['color'], zorder=3,
                 markerfacecolor='white' if k == 1 else st['color'], markeredgewidth=1.0, ms=6)
-    ax.axhline(95.0, color=INK3, lw=0.6)
-    ax.set_xlim(0, 5)
+    level_line(ax, 95.0, 3.2, '95 %')
+    ax.set_xlim(0, 4)
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.set_ylim(0, 101)
     ax.xaxis.set_major_formatter(lin_formatter(0))
     ax.yaxis.set_major_formatter(lin_formatter(0))
     ax.set_xlabel('Отклонение угла от угла между прямыми последовательностями |δ|, °')
     ax.set_ylabel('Доля сочетаний несимметрии, %')
     ax.legend(loc='lower right')
-    ax.text(0.98, 0.30, 'K2U, K0U каждого источника ~ U(0; 2 %)', transform=ax.transAxes,
-            ha='right', va='bottom', fontsize=C.FONT_SIZE - 2, color=INK2)
     fig.tight_layout()
     save(fig, 'ris6_C4_nesimmetriya')
 
@@ -407,7 +420,7 @@ def fig_c5():
     ax.xaxis.set_major_formatter(lin_formatter(1))
     ax.yaxis.set_major_formatter(lin_formatter(0))
     ax.set_xlabel('Разность частот источников |Δf|, Гц')
-    ax.set_ylabel('Неучтённая общая задержка d̄, мс')
+    ax.set_ylabel(r'Неучтённая общая задержка $\bar{\mathrm{d}}$, мс')
     fig.tight_layout()
     save(fig, 'dop_C5_zaderzhka')
 
@@ -435,23 +448,24 @@ def fig_c6():
     s = {(r['mode'], r['est']): float(r['p95_abs']) for r in read('c6_summary.csv')}
     rows = sorted(C6_ROWS, key=lambda e: -s[('working', e[0])])
     fig = plt.figure(figsize=figsize(10.5))
-    ax = fig.add_axes([0.37, 0.13, 0.60, 0.84])
+    ax = fig.add_axes([0.37, 0.13, 0.60, 0.78])
     n = len(rows)
-    mk_common = dict(marker='o', ms=6.5, markerfacecolor='none', markeredgecolor=INK, markeredgewidth=1.1,
+    # цвет — по режиму: общий сигнал серый, разные сигналы красные, перед включением — светло-красные
+    mk_common = dict(marker='o', ms=6.5, markerfacecolor='none', markeredgecolor=INK3, markeredgewidth=1.3,
                      linestyle='none')
-    mk_sync = dict(marker='D', ms=5.0, markerfacecolor=INK3, markeredgecolor='white', markeredgewidth=0.8,
+    mk_sync = dict(marker='D', ms=5.0, markerfacecolor=RED_LIGHT, markeredgecolor='white', markeredgewidth=0.8,
                    linestyle='none')
-    mk_work = dict(marker='o', ms=6.5, markerfacecolor=INK, markeredgecolor='white', markeredgewidth=0.8,
+    mk_work = dict(marker='o', ms=6.5, markerfacecolor=RED, markeredgecolor='white', markeredgewidth=0.8,
                    linestyle='none')
     for i, (est, _) in enumerate(rows):
         y = n - 1 - i
         c, w, b = s[('common', est)], s[('working', est)], s[('sync', est)]
-        ax.plot([c, w], [y, y], color=INK3, lw=0.9, zorder=1, solid_capstyle='butt')
+        ax.plot([c, w], [y, y], color='#bfbfbf', lw=0.9, zorder=1, solid_capstyle='butt')
         ax.plot(c, y, zorder=4, **mk_common)   # кольцо без заливки: видно и при наложении на ◆
         ax.plot(w, y, zorder=5, **mk_work)
         # ◆ поверх ●: при совпадении значений (переход через ноль) ромб виден внутри точки
         same = abs(np.log10(b / w)) < 0.08
-        ax.plot(b, y, zorder=6, **(dict(mk_sync, ms=3.2, markeredgecolor=INK3, markeredgewidth=0.3)
+        ax.plot(b, y, zorder=6, **(dict(mk_sync, ms=3.2, markeredgecolor=RED_LIGHT, markeredgewidth=0.3)
                                    if same else mk_sync))
         # подписываем только рабочий режим — значение, ради которого строится рисунок
         ax.text(w * 1.4, y, comma(float(f'{w:.2g}')) + '°', va='center', ha='left',
@@ -469,20 +483,20 @@ def fig_c6():
     ax.tick_params(axis='x', labelsize=C.FONT_SIZE - 1)
     ax.grid(True, axis='x', which='major')
     ax.grid(False, axis='y')
-    ax.set_xlabel('Q95 — 95-й процентиль объединённых значений |ε|, °', fontsize=C.FONT_SIZE - 1)
+    ax.set_xlabel('Q$_{95}$ модуля погрешности, °', fontsize=C.FONT_SIZE - 1)
     # ориентир масштаба: 1° — порядок допуска на погрешность угла опережения синхронизатора [8];
     # это не норма погрешности прибора, сравнение с линией соответствия не означает
     ax.axvline(1.0, color=INK2, lw=0.8, zorder=0, linestyle=(0, (4, 2)))
     ax.text(0.92, n - 0.45, 'ориентир 1°', ha='right', va='center', fontsize=C.FONT_SIZE - 2, color=INK2)
-    # легенда — в пустом правом нижнем углу поля
+    # легенда — над полем в одну строку, чтобы не закрывать нижние строки
     from matplotlib.lines import Line2D
     handles = [
         Line2D([], [], label='общий сигнал', **mk_common),
         Line2D([], [], label='разные сигналы, резерв 50 ± 1 Гц', **mk_work),
         Line2D([], [], label='перед включением, |Δf| ≤ 0,2 Гц', **mk_sync),
     ]
-    ax.legend(handles=handles, loc='lower right', fontsize=C.FONT_SIZE - 2, handletextpad=0.3,
-              borderaxespad=0.4, frameon=True, framealpha=1.0, edgecolor='none', facecolor='white')
+    fig.legend(handles=handles, loc='upper center', bbox_to_anchor=(0.5, 0.995), ncol=3,
+              fontsize=C.FONT_SIZE - 2, handletextpad=0.3, columnspacing=1.2, borderaxespad=0.3)
     save(fig, 'ris7_C6_itog')
 
 
@@ -517,8 +531,9 @@ def fig_test_setup():
     box(0.2, 1.0, 4.3, 6.6, '', lw=1.3)
     ax.text(2.35, 6.95, 'Имитатор двух\nтрёхфазных источников\n(сеть и ДГУ)', ha='center', va='center',
             fontsize=fs, fontweight='bold', color=INK, linespacing=1.3)
-    box(0.5, 4.45, 3.7, 1.75, 'Система 1: u₁A, u₁B, u₁C\nf₁, гармоники,\nнесимметрия')
-    box(0.5, 2.0, 3.7, 1.75, 'Система 2: u₂A, u₂B, u₂C\nf₂, свои гармоники\nи несимметрия')
+    # обозначения напряжений — только на стрелках к модулям
+    box(0.5, 4.45, 3.7, 1.75, 'Система 1:\nf₁, гармоники,\nнесимметрия')
+    box(0.5, 2.0, 3.7, 1.75, 'Система 2:\nf₂, свои гармоники\nи несимметрия')
     ax.text(2.35, 1.35, 'фазы выходов заданы\nотносительно метки t₀', ha='center', va='center', fontsize=fs - 0.5,
             color=INK2, linespacing=1.2)
     # прибор
@@ -526,7 +541,8 @@ def fig_test_setup():
     ax.text(8.6, 7.15, 'Проверяемый прибор', ha='center', va='center', fontsize=fs, fontweight='bold', color=INK)
     box(6.3, 4.6, 1.9, 1.45, 'Модуль 1')
     box(6.3, 2.15, 1.9, 1.45, 'Модуль 2')
-    box(8.7, 1.4, 2.2, 5.2, 'Контроллер\n\nаппаратный\nтаймер:\nметки кадров\nи метка t₀\n\nΔφ̂(t)\nс меткой\nвремени')
+    # таймер оставлен: суть схемы — t₀ фиксирует тот же таймер, что и метки кадров
+    box(8.7, 1.4, 2.2, 5.2, 'Контроллер\n\nтаймер:\nметки кадров\nи t₀\n\nΔφ̂(t)')
     for y in (5.32, 2.87):
         arrow([(4.2, y), (6.3, y)])
         arrow([(8.2, y), (8.7, y)])
@@ -537,8 +553,7 @@ def fig_test_setup():
     ax.text(6.05, 0.58, 'общая метка времени t₀ (импульс)', ha='center', va='bottom', fontsize=fs - 0.5, color=INK)
     # сравнение с истинной разностью фаз
     arrow([(10.9, 4.0), (11.75, 4.0)])
-    box(11.75, 2.35, 4.05, 3.3, 'Сравнение с истинной\nразностью фаз\n\nΔφ(t) = Δφ₀ −\n− 360°·(f₂ − f₁)·(t − t₀)\n\n'
-        'ε(t) = Δφ̂(t) − Δφ(t)')
+    box(11.75, 2.6, 4.05, 2.8, 'Сравнение с истинной\nразностью фаз\n\nΔφ(t) по (1)\n\nε(t) = Δφ̂(t) − Δφ(t)')
     save(fig, 'ris8_opyt_dva_signala')
 
 
